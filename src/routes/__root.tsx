@@ -104,8 +104,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           description: "Serwis sprzętu stomatologicznego — unity, autoklawy, kompresory, systemy ssące.",
           telephone: "+48570974753",
           email: "Arrimserwis@gmail.com",
+          taxID: "PL5291833249",
+          vatID: "PL5291833249",
           areaServed: ["Warszawa", "Pruszków", "Piastów", "Ożarów Mazowiecki", "Grodzisk Mazowiecki", "Żyrardów"],
-          address: { "@type": "PostalAddress", addressLocality: "Warszawa", addressCountry: "PL" },
+          address: { "@type": "PostalAddress", streetAddress: "ul. H. Szczerkowskiego 419", postalCode: "05-827", addressLocality: "Grodzisk Mazowiecki", addressCountry: "PL" },
           openingHoursSpecification: [{
             "@type": "OpeningHoursSpecification",
             dayOfWeek: ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
