@@ -114,7 +114,7 @@ const t = {
     faqs: [
       { q: "Jak szybko realizowany jest serwis?", a: "Awarie krytyczne staramy się obsłużyć tego samego dnia. Standardowy czas reakcji w Warszawie i okolicach to 2–24 godziny." },
       { q: "Czy wykonujecie dojazd do gabinetu?", a: "Tak. Pracujemy bezpośrednio w gabinecie klienta — diagnostyka, naprawa i wycena odbywają się na miejscu." },
-      { q: "Jakie marki obsługujecie?", a: "KaVo, Dentsply Sirona, Planmeca, Stern Weber, Castellini, Anthos, A-dec, W&H, Melag, NSK, Dürr Dental, Cattani i wiele innych." },
+      { q: "Jakie marki obsługujecie?", a: "KaVo, Dentsply Sirona, Planmeca, A-dec, W&H, NSK, Melag, Dürr Dental i inne popularne marki." },
       { q: "Czy wykonujecie przeglądy techniczne?", a: "Tak. Realizujemy przeglądy unitów, autoklawów, kompresorów i systemów ssących wraz z pełną dokumentacją techniczną." },
       { q: "Czy naprawiacie autoklawy?", a: "Tak — naprawy, kalibracja, testy sterylizacji i konserwacja autoklawów wszystkich popularnych marek." },
       { q: "Czy serwisujecie kompresory?", a: "Tak. Wymiana filtrów, osuszacze, kontrola szczelności oraz serwis okresowy kompresorów stomatologicznych." },
@@ -219,7 +219,7 @@ const t = {
     faqs: [
       { q: "Как быстро выполняется сервис?", a: "Критические поломки стараемся обслужить в тот же день. Стандартное время реагирования в Варшаве и окрестностях — 2–24 часа." },
       { q: "Выезжаете ли вы в кабинет?", a: "Да. Работаем непосредственно в кабинете клиента — диагностика, ремонт и смета на месте." },
-      { q: "Какие бренды обслуживаете?", a: "KaVo, Dentsply Sirona, Planmeca, Stern Weber, Castellini, Anthos, A-dec, W&H, Melag, NSK, Dürr Dental, Cattani и многие другие." },
+      { q: "Какие бренды обслуживаете?", a: "KaVo, Dentsply Sirona, Planmeca, A-dec, W&H, NSK, Melag, Dürr Dental и другие популярные марки." },
       { q: "Проводите ли технические осмотры?", a: "Да. Проводим осмотры установок, автоклавов, компрессоров и систем аспирации с полной технической документацией." },
       { q: "Ремонтируете ли автоклавы?", a: "Да — ремонт, калибровка, тесты стерилизации и обслуживание автоклавов всех популярных марок." },
       { q: "Обслуживаете ли компрессоры?", a: "Да. Замена фильтров, осушители, контроль герметичности и периодический сервис стоматологических компрессоров." },
@@ -324,7 +324,7 @@ const t = {
     faqs: [
       { q: "How fast is the service?", a: "Critical failures we aim to handle the same day. Standard response time in Warsaw and surroundings is 2–24 hours." },
       { q: "Do you come to the practice?", a: "Yes. We work directly at the client's practice — diagnostics, repair and quoting all happen on-site." },
-      { q: "Which brands do you service?", a: "KaVo, Dentsply Sirona, Planmeca, Stern Weber, Castellini, Anthos, A-dec, W&H, Melag, NSK, Dürr Dental, Cattani and many others." },
+      { q: "Which brands do you service?", a: "KaVo, Dentsply Sirona, Planmeca, A-dec, W&H, NSK, Melag, Dürr Dental and other popular brands." },
       { q: "Do you perform technical inspections?", a: "Yes. We perform inspections of units, autoclaves, compressors and suction systems with full technical documentation." },
       { q: "Do you repair autoclaves?", a: "Yes — repairs, calibration, sterilisation tests and maintenance of autoclaves of all popular brands." },
       { q: "Do you service compressors?", a: "Yes. Filter replacement, dryers, leak testing and periodic service of dental compressors." },
@@ -355,7 +355,7 @@ const t = {
 const serviceIcons = [Stethoscope, ShieldCheck, Gauge, Wind, Sofa, ClipboardCheck, Truck, FileText, Sparkles];
 const whyIcons = [Truck, Wrench, Package, FileText, ClipboardCheck, ShieldCheck];
 
-const brands = ["KaVo","Dentsply Sirona","Sirona","Planmeca","Stern Weber","Castellini","Anthos","Diplomat","A-dec","Cefla","W&H","Melag","Mocom","Euronda","NSK","Bien-Air","Dürr Dental","Cattani","Metasys"];
+const brands = ["KaVo","Dentsply Sirona","Planmeca","A-dec","W&H","NSK","Melag","Dürr Dental"];
 
 const areas = ["Warszawa","Pruszków","Piastów","Ożarów Mazowiecki","Błonie","Brwinów","Milanówek","Grodzisk Mazowiecki","Żyrardów","Konstancin-Jeziorna","Warszawa Zachód","Ursus","Włochy","Okęcie","Raszyn"];
 
