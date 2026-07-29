@@ -933,7 +933,6 @@ function Landing() {
         <div className="border-t border-white/10">
           <div className="mx-auto max-w-7xl px-4 py-5 text-xs text-white/55 flex flex-wrap items-center justify-between gap-3">
             <span>© 2020 ARIMSERWIS. {L.footerRights}</span>
-            <span>NIP {NIP}</span>
           </div>
         </div>
       </footer>
