@@ -1,22 +1,28 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { Toaster, toast } from "sonner";
 import {
   Phone, Mail, Clock, MapPin, Wrench, Stethoscope, Gauge, Wind,
   Sofa, ClipboardCheck, FileText, Package, Truck, ShieldCheck,
   Sparkles, CheckCircle2, AlertTriangle, Menu, X, ChevronDown, Star, MessageCircle,
 } from "lucide-react";
+import "leaflet/dist/leaflet.css";
+import type * as LeafletTypes from "leaflet";
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIconUrl from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
 import heroImg from "@/assets/hero-dental.jpg";
 import technicianImg from "@/assets/technician.jpg";
 import equipmentImg from "@/assets/equipment.jpg";
+import logoIcon from "@/assets/logo-icon.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "ARRIMSERWIS — Serwis sprzętu stomatologicznego Warszawa | 7 dni w tygodniu" },
+      { title: "ARIMSERWIS — Serwis sprzętu stomatologicznego Warszawa | 7 dni w tygodniu" },
       { name: "description", content: "Serwis i naprawa unitów stomatologicznych, autoklawów, kompresorów i systemów ssących w Warszawie i okolicach. Szybki dojazd, 7 dni w tygodniu 7:00–21:00." },
-      { property: "og:title", content: "ARRIMSERWIS — Serwis sprzętu stomatologicznego Warszawa" },
+      { property: "og:title", content: "ARIMSERWIS — Serwis sprzętu stomatologicznego Warszawa" },
       { property: "og:description", content: "Diagnostyka, naprawy, przeglądy techniczne gabinetów stomatologicznych. Tel. +48 570 974 753." },
       { property: "og:url", content: "/" },
     ],
@@ -25,48 +31,103 @@ export const Route = createFileRoute("/")({
   component: Landing,
 });
 
-type Lang = "pl" | "ru" | "en";
+type Lang = "pl" | "de" | "en";
 
 const PHONE = "+48 570 974 753";
 const PHONE_HREF = "tel:+48570974753";
 const WA_HREF = "https://wa.me/48570974753";
-const EMAIL = "Arrimserwis@gmail.com";
+const EMAIL = "arimserwis@gmail.com";
 const NIP = "5291833249";
-const ADDRESS = "ul. H. Szczerkowskiego 419, 05-827 Grodzisk Mazowiecki";
+
+// Web3Forms delivers this contact form straight to EMAIL (no backend needed).
+// Get a free access key at https://web3forms.com (enter arimserwis@gmail.com,
+// confirm the email they send you) and paste it below, then rebuild the site.
+const WEB3FORMS_ACCESS_KEY = "931e2eb7-53ff-474a-83ce-af700f0ee842";
+const ADDRESS = "ul. H. Szczerkowskiego 4, 05-827 Grodzisk Mazowiecki";
+const ADDRESS_COORDS: [number, number] = [52.1135, 20.6441811];
+
+// Service-zone outline: a narrow oval along the Żyrardów <-> Ursus axis (the corridor
+// the office actually drives: Żyrardów - Grodzisk Mazowiecki [office] - Milanówek -
+// Brwinów - Pruszków - Piastów - Ursus, ~17.5 km half-length / ~9 km half-width), merged
+// with a rounded lobe reaching south to Mszczonów and smoothed (morphological closing) so
+// the join reads as one continuous oval rather than two overlapping circles. The shape
+// intentionally stops at Ursus (Włochy, Okęcie, Warszawa Zachód and central Warsaw are
+// excluded) and stays well clear of Konstancin-Jeziorna.
+const SERVICE_ZONE: [number, number][] = [
+  [52.0041,20.3895],
+  [52.0495,20.424],
+  [52.0796,20.4318],
+  [52.0921,20.4376],
+  [52.1193,20.4613],
+  [52.1399,20.4886],
+  [52.1567,20.517],
+  [52.1725,20.5496],
+  [52.1873,20.5864],
+  [52.202,20.6326],
+  [52.2136,20.6811],
+  [52.2212,20.7289],
+  [52.2243,20.7674],
+  [52.2238,20.8063],
+  [52.2192,20.8408],
+  [52.2106,20.8673],
+  [52.1978,20.8863],
+  [52.1823,20.8953],
+  [52.1662,20.8953],
+  [52.1479,20.8872],
+  [52.1269,20.8693],
+  [52.1055,20.8425],
+  [52.0846,20.8077],
+  [52.0652,20.7665],
+  [52.0433,20.7069],
+  [52.0279,20.6789],
+  [52.0167,20.666],
+  [52.0027,20.6555],
+  [51.9628,20.644],
+  [51.9449,20.6325],
+  [51.9269,20.6109],
+  [51.9132,20.582],
+  [51.9041,20.5424],
+  [51.9026,20.5216],
+  [51.9035,20.4961],
+  [51.9116,20.456],
+  [51.9202,20.4346],
+  [51.929,20.4193],
+  [51.9507,20.3963],
+  [51.9656,20.3883],
+  [51.9783,20.3854],
+  [52.0041,20.3895],
+];
 
 const t = {
   pl: {
     nav: { services: "Usługi", pricing: "Cennik", area: "Obszar", reviews: "Opinie", faq: "FAQ", contact: "Kontakt" },
     emergencyBar: "AWARIA SPRZĘTU? Szybka reakcja serwisowa — Warszawa i okolice.",
-    badge: "Warszawa · 7 dni w tygodniu",
+    badge: "Warszawa i okolice · 7 dni w tygodniu",
     heroTitle: "Profesjonalny serwis sprzętu stomatologicznego w Warszawie i okolicach",
     heroHighlight: "Warszawie i okolicach",
-    heroSub: "Diagnostyka, naprawy, przeglądy techniczne i kompleksowa obsługa gabinetów stomatologicznych.",
-    trust: ["Szybki dojazd", "Doświadczenie techniczne", "Obsługa wielu marek", "7 dni w tygodniu", "Praca 7:00 – 21:00"],
+    heroSub: "Diagnostyka, naprawy, przeglądy techniczne oraz zaopatrzenie materiałowo-gospodarcze — kompleksowa obsługa gabinetów stomatologicznych.",
+    trust: ["Szybki dojazd", "Doświadczenie techniczne", "Obsługa wielu marek", "7 dni w tygodniu", "Praca 7:00 – 21:00", "Minimalizacja przestojów"],
     ctaReport: "Zgłoś awarię", ctaCall: "Zadzwoń teraz",
     onSiteTitle: "Serwis na miejscu", onSiteDesc: "Diagnostyka i naprawa w gabinecie klienta",
     aboutLabel: "O firmie", aboutTitle: "O nas",
-    aboutLead: "ARRIMSERWIS specjalizuje się w kompleksowym serwisie sprzętu stomatologicznego dla gabinetów oraz małych klinik.",
+    aboutLead: "ARIMSERWIS specjalizuje się w kompleksowym serwisie sprzętu stomatologicznego dla gabinetów oraz małych klinik.",
     aboutPoints: ["Diagnostyka usterek", "Naprawy urządzeń", "Przeglądy techniczne", "Modernizacje sprzętu", "Dokumentacja techniczna", "Minimalizacja przestojów"],
     servicesLabel: "Usługi", servicesTitle: "Nasze usługi", servicesLead: "Pełna obsługa techniczna gabinetu — od diagnostyki po modernizacje.",
     services: [
       { title: "Unity stomatologiczne", items: ["Serwis i naprawa", "Hydraulika · elektronika · pneumatyka", "Części zamienne", "Modernizacje"] },
       { title: "Autoklawy", items: ["Naprawa i kalibracja", "Testy sterylizacji", "Konserwacja", "Przeglądy okresowe"] },
-      { title: "Kompresory", items: ["Wymiana filtrów", "Osuszacze", "Kontrola szczelności", "Serwis okresowy"] },
-      { title: "Systemy ssące", items: ["Serwis i czyszczenie", "Filtry · separatory", "Modernizacje"] },
-      { title: "Tapicerka foteli", items: ["Renowacja i wymiana", "Personalizacja", "Materiały odporne na dezynfekcję"] },
-      { title: "Przeglądy techniczne", items: ["Kontrole okresowe", "Raporty i dokumentacja", "Zalecenia techniczne"] },
-      { title: "Diagnostyka i dojazd", items: ["Szybka ocena awarii", "Wycena na miejscu", "Naprawa na miejscu"] },
-      { title: "Dokumentacja techniczna", items: ["Ewidencja urządzeń", "Historia napraw", "Wsparcie podczas audytów"] },
-      { title: "Usługi dodatkowe", items: ["Montaż urządzeń", "Modernizacje gabinetów", "Szkolenia i doradztwo"] },
+      { title: "Kompresory i systemy ssące", items: ["Wymiana filtrów i osuszaczy", "Kontrola szczelności", "Serwis i czyszczenie systemów ssących", "Modernizacje i przeglądy okresowe"] },
+      { title: "Diagnostyka, przeglądy i dokumentacja", items: ["Szybka ocena awarii i wycena na miejscu", "Okresowe przeglądy techniczne", "Raporty i zalecenia techniczne", "Ewidencja urządzeń i historia napraw"] },
+      { title: "Drobne naprawy i renowacje", items: ["Drobne prace remontowe w gabinecie", "Naprawa zabudowy i mebli gabinetowych", "Renowacja tapicerki fotela", "Drobne prace elektryczne i hydrauliczne"] },
+      { title: "Zaopatrzenie materiałowo-gospodarcze", items: ["Środki dezynfekcyjne i chemia gospodarcza", "Materiały jednorazowe", "Artykuły biurowe do gabinetu", "Akcesoria i drobne wyposażenie"] },
     ],
     supplyLabel: "Zaopatrzenie gabinetów", supplyTitle: "Materiały, akcesoria i części zamienne",
     supplyDesc: "Środki dezynfekcyjne, akcesoria stomatologiczne, części zamienne i wyposażenie gabinetów.",
     supplyCta: "Zapytaj o dostępność",
-    brandsLabel: "Marki", brandsTitle: "Obsługiwane marki", brandsNote: "Serwisujemy również wiele innych marek sprzętu stomatologicznego.",
     pricingLabel: "Cennik", pricingTitle: "Orientacyjny cennik",
     pricingNote: "Ceny mają charakter orientacyjny. Ostateczna wycena zależy od urządzenia, zakresu prac i dostępności części.",
     pricingDisclaimer: "Przed rozpoczęciem prac klient zawsze otrzymuje wstępną wycenę. Nie wykonujemy dodatkowych napraw bez akceptacji kosztów.",
+    pricingLegalNote: "Przedstawiony cennik ma charakter informacyjny i nie stanowi oferty handlowej w rozumieniu art. 66 §1 Kodeksu Cywilnego. Ceny mogą ulec zmianie i nie obejmują ewentualnych dodatkowych kosztów leczenia ustalanych indywidualnie podczas konsultacji.",
     pricing: {
       "Serwis i diagnostyka": [
         ["Diagnostyka urządzenia", "od 150 zł"],
@@ -131,6 +192,7 @@ const t = {
     send: "Wyślij zgłoszenie",
     formConsent: "Klikając „Wyślij\" akceptujesz kontakt zwrotny w sprawie zgłoszenia.",
     sent: "Dziękujemy za zgłoszenie. Skontaktujemy się z Państwem najszybciej jak to możliwe.",
+    sendError: "Wystąpił błąd przy wysyłaniu. Spróbuj ponownie lub zadzwoń pod " + PHONE + ".",
     hours: "7:00 – 21:00 · 7 dni w tygodniu",
     lblPhone: "Telefon", lblEmail: "E-mail", lblHours: "Godziny pracy", lblAddress: "Adres", lblNip: "NIP",
     footerTagline: "Serwis sprzętu stomatologicznego — Warszawa i okolice.",
@@ -138,145 +200,140 @@ const t = {
     footerPrivacy: "Polityka prywatności", footerCompany: "Dane firmy",
     footerRights: "Wszystkie prawa zastrzeżone.",
     btnCall: "Zadzwoń", btnReport: "Zgłoś awarię",
-    mapTitle: "Mapa obszaru działania ARRIMSERWIS",
+    mapTitle: "Mapa obszaru działania ARIMSERWIS",
   },
-  ru: {
-    nav: { services: "Услуги", pricing: "Цены", area: "Зона", reviews: "Отзывы", faq: "FAQ", contact: "Контакт" },
-    emergencyBar: "ПОЛОМКА ОБОРУДОВАНИЯ? Срочный выезд — Варшава и окрестности.",
-    badge: "Варшава · 7 дней в неделю",
-    heroTitle: "Профессиональный сервис стоматологического оборудования в Варшаве и окрестностях",
-    heroHighlight: "в Варшаве и окрестностях",
-    heroSub: "Диагностика, ремонт, техническое обслуживание и комплексное сопровождение стоматологических кабинетов.",
-    trust: ["Быстрый выезд", "Технический опыт", "Много брендов", "7 дней в неделю", "Работаем 7:00 – 21:00"],
-    ctaReport: "Сообщить о поломке", ctaCall: "Позвонить",
-    onSiteTitle: "Сервис на месте", onSiteDesc: "Диагностика и ремонт в кабинете клиента",
-    aboutLabel: "О компании", aboutTitle: "О нас",
-    aboutLead: "ARRIMSERWIS — комплексный сервис стоматологического оборудования для кабинетов и небольших клиник.",
-    aboutPoints: ["Диагностика неисправностей", "Ремонт оборудования", "Техническое обслуживание", "Модернизация оборудования", "Техническая документация", "Минимизация простоев"],
-    servicesLabel: "Услуги", servicesTitle: "Наши услуги", servicesLead: "Полное техническое обслуживание — от диагностики до модернизации.",
+  de: {
+    nav: { services: "Leistungen", pricing: "Preise", area: "Einsatzgebiet", reviews: "Bewertungen", faq: "FAQ", contact: "Kontakt" },
+    emergencyBar: "GERÄTEAUSFALL? Schneller Vor-Ort-Service — Warschau und Umgebung.",
+    badge: "Warschau und Umgebung · 7 Tage die Woche",
+    heroTitle: "Professioneller Service für zahnärztliche Geräte in Warschau und Umgebung",
+    heroHighlight: "in Warschau und Umgebung",
+    heroSub: "Diagnose, Reparaturen, technische Inspektionen sowie Material- und Wirtschaftsversorgung — die umfassende Betreuung Ihrer Zahnarztpraxis.",
+    trust: ["Schnelle Anfahrt", "Technische Erfahrung", "Viele Marken", "7 Tage die Woche", "Geöffnet 7:00 – 21:00", "Minimierte Ausfallzeiten"],
+    ctaReport: "Störung melden", ctaCall: "Jetzt anrufen",
+    onSiteTitle: "Service vor Ort", onSiteDesc: "Diagnose und Reparatur direkt in der Praxis",
+    aboutLabel: "Über uns", aboutTitle: "Über uns",
+    aboutLead: "ARIMSERWIS bietet den kompletten technischen Service für zahnärztliche Geräte in Praxen und kleinen Kliniken.",
+    aboutPoints: ["Fehlerdiagnose", "Gerätereparaturen", "Technische Inspektionen", "Geräte-Modernisierung", "Technische Dokumentation", "Minimierte Ausfallzeiten"],
+    servicesLabel: "Leistungen", servicesTitle: "Unsere Leistungen", servicesLead: "Vollständige technische Betreuung — von der Diagnose bis zur Modernisierung.",
     services: [
-      { title: "Стоматологические установки", items: ["Сервис и ремонт", "Гидравлика · электроника · пневматика", "Запчасти", "Модернизация"] },
-      { title: "Автоклавы", items: ["Ремонт и калибровка", "Тесты стерилизации", "Обслуживание", "Периодические проверки"] },
-      { title: "Компрессоры", items: ["Замена фильтров", "Осушители", "Контроль герметичности", "Периодический сервис"] },
-      { title: "Системы аспирации", items: ["Сервис и чистка", "Фильтры · сепараторы", "Модернизация"] },
-      { title: "Обивка кресел", items: ["Реновация и замена", "Персонализация", "Материал устойчивый к дезинфекции"] },
-      { title: "Технические осмотры", items: ["Периодический контроль", "Отчёты и документация", "Технические рекомендации"] },
-      { title: "Диагностика и выезд", items: ["Быстрая оценка поломки", "Смета на месте", "Ремонт на месте"] },
-      { title: "Техническая документация", items: ["Учёт оборудования", "История ремонтов", "Поддержка при аудитах"] },
-      { title: "Дополнительные услуги", items: ["Монтаж оборудования", "Модернизация кабинетов", "Обучение и консультации"] },
+      { title: "Behandlungseinheiten", items: ["Service und Reparatur", "Hydraulik · Elektronik · Pneumatik", "Ersatzteile", "Modernisierung"] },
+      { title: "Autoklaven", items: ["Reparatur und Kalibrierung", "Sterilisationstests", "Wartung", "Regelmäßige Prüfungen"] },
+      { title: "Kompressoren und Absauganlagen", items: ["Filter- und Trocknerwechsel", "Dichtheitsprüfung", "Service und Reinigung der Absauganlagen", "Modernisierung und regelmäßige Prüfungen"] },
+      { title: "Diagnose, Inspektionen und Dokumentation", items: ["Schnelle Fehlereinschätzung und Kostenvoranschlag vor Ort", "Regelmäßige technische Inspektionen", "Berichte und technische Empfehlungen", "Geräteverzeichnis und Reparaturhistorie"] },
+      { title: "Kleinreparaturen und Renovierungen", items: ["Kleine Instandsetzungsarbeiten in der Praxis", "Reparatur von Einbauten und Praxismöbeln", "Renovierung der Stuhlpolsterung", "Kleinere Elektro- und Sanitärarbeiten"] },
+      { title: "Material- und Wirtschaftsversorgung", items: ["Desinfektionsmittel und Reinigungschemie", "Einwegmaterialien", "Büromaterial für die Praxis", "Zubehör und Kleinausstattung"] },
     ],
-    supplyLabel: "Снабжение кабинетов", supplyTitle: "Материалы, аксессуары и запчасти",
-    supplyDesc: "Дезинфицирующие средства, стоматологические аксессуары, запчасти и оснащение кабинетов.",
-    supplyCta: "Узнать наличие",
-    brandsLabel: "Бренды", brandsTitle: "Обслуживаемые бренды", brandsNote: "Обслуживаем также многие другие марки стоматологического оборудования.",
-    pricingLabel: "Цены", pricingTitle: "Ориентировочные цены",
-    pricingNote: "Цены ориентировочные. Финальная стоимость зависит от оборудования, объёма работ и наличия запчастей.",
-    pricingDisclaimer: "Перед началом работ клиент всегда получает предварительную смету. Дополнительные работы не выполняются без согласования.",
+    supplyLabel: "Praxisbedarf", supplyTitle: "Materialien, Zubehör und Ersatzteile",
+    supplyDesc: "Desinfektionsmittel, zahnärztliches Zubehör, Ersatzteile und Praxisausstattung.",
+    supplyCta: "Verfügbarkeit anfragen",
+    pricingLabel: "Preise", pricingTitle: "Richtpreise",
+    pricingNote: "Die Preise sind Richtwerte. Der endgültige Preis hängt vom Gerät, Arbeitsumfang und der Ersatzteilverfügbarkeit ab.",
+    pricingDisclaimer: "Vor Arbeitsbeginn erhält der Kunde immer einen Kostenvoranschlag. Zusätzliche Arbeiten werden nur nach Zustimmung ausgeführt.",
+    pricingLegalNote: "Die dargestellte Preisliste hat informativen Charakter und stellt kein Handelsangebot im Sinne von Art. 66 §1 des polnischen Zivilgesetzbuches dar. Die Preise können sich ändern und beinhalten keine eventuellen zusätzlichen Behandlungskosten, die individuell während der Beratung festgelegt werden.",
     pricing: {
-      "Сервис и диагностика": [
-        ["Диагностика оборудования", "от 150 zł"],
-        ["Выезд специалиста", "от 100 zł"],
-        ["Сервисный час работы", "от 180 zł"],
-        ["Осмотр стоматологической установки", "от 350 zł"],
-        ["Осмотр автоклава", "от 400 zł"],
-        ["Осмотр компрессора", "от 300 zł"],
-        ["Осмотр системы аспирации", "от 300 zł"],
+      "Service und Diagnose": [
+        ["Gerätediagnose", "ab 150 zł"],
+        ["Anfahrt des Technikers", "ab 100 zł"],
+        ["Servicestunde", "ab 180 zł"],
+        ["Inspektion Behandlungseinheit", "ab 350 zł"],
+        ["Inspektion Autoklav", "ab 400 zł"],
+        ["Inspektion Kompressor", "ab 300 zł"],
+        ["Inspektion Absauganlage", "ab 300 zł"],
       ],
-      "Ремонт": [
-        ["Ремонт стоматологической установки", "от 300 zł"],
-        ["Ремонт автоклава", "от 400 zł"],
-        ["Ремонт компрессора", "от 300 zł"],
-        ["Ремонт системы аспирации", "от 300 zł"],
-        ["Ремонт электрических систем", "от 250 zł"],
-        ["Ремонт пневматических систем", "от 250 zł"],
-        ["Ремонт гидравлических систем", "от 250 zł"],
+      "Reparaturen": [
+        ["Reparatur Behandlungseinheit", "ab 300 zł"],
+        ["Reparatur Autoklav", "ab 400 zł"],
+        ["Reparatur Kompressor", "ab 300 zł"],
+        ["Reparatur Absauganlage", "ab 300 zł"],
+        ["Reparatur elektrischer Systeme", "ab 250 zł"],
+        ["Reparatur pneumatischer Systeme", "ab 250 zł"],
+        ["Reparatur hydraulischer Systeme", "ab 250 zł"],
       ],
-      "Дополнительные услуги": [
-        ["Реновация обивки кресла", "от 600 zł"],
-        ["Калибровка автоклава", "от 200 zł"],
-        ["Ведение технической документации", "от 200 zł / мес."],
-        ["Монтаж стоматологического оборудования", "от 500 zł"],
-        ["Модернизация кабинета", "индивидуальная смета"],
+      "Zusätzliche Leistungen": [
+        ["Renovierung Stuhlpolsterung", "ab 600 zł"],
+        ["Kalibrierung Autoklav", "ab 200 zł"],
+        ["Führung technischer Dokumentation", "ab 200 zł / Monat"],
+        ["Installation zahnärztlicher Geräte", "ab 500 zł"],
+        ["Praxis-Modernisierung", "individuelles Angebot"],
       ],
     } as Record<string, [string, string][]>,
-    carePlanLabel: "Сервисная поддержка", carePlanTitle: "Постоянное сопровождение кабинетов",
-    carePlanPrice: "от 299 zł", carePlanPer: "/ месяц",
-    carePlanItems: ["Приоритетные заявки","Напоминания об осмотрах","Ведение документации","Льготные условия сервиса","Техническая поддержка"],
-    carePlanCta: "Запросить индивидуальный расчёт",
-    whyLabel: "Почему мы", whyTitle: "Почему мы",
+    carePlanLabel: "Servicebetreuung", carePlanTitle: "Dauerhafte Betreuung für Praxen",
+    carePlanPrice: "ab 299 zł", carePlanPer: "/ Monat",
+    carePlanItems: ["Priorisierte Anfragen","Erinnerungen an Inspektionen","Dokumentationsführung","Bevorzugte Servicekonditionen","Technischer Support"],
+    carePlanCta: "Individuelles Angebot anfragen",
+    whyLabel: "Warum wir", whyTitle: "Warum wir",
     why: [
-      { title: "Быстрый выезд", desc: "Минимизируем простои кабинета." },
-      { title: "Технический опыт", desc: "Эффективная диагностика и ремонт." },
-      { title: "Много брендов", desc: "Комплексное обслуживание оборудования." },
-      { title: "Прозрачные цены", desc: "Понятные условия сотрудничества." },
-      { title: "Документация", desc: "Полная история обслуживания." },
-      { title: "Техническая поддержка", desc: "Помощь и после оказания услуги." },
+      { title: "Schnelle Anfahrt", desc: "Wir minimieren Praxisausfallzeiten." },
+      { title: "Technische Erfahrung", desc: "Effektive Diagnose und Reparatur." },
+      { title: "Viele Marken", desc: "Umfassender Gerätesupport." },
+      { title: "Transparente Preise", desc: "Klare Vertragsbedingungen." },
+      { title: "Dokumentation", desc: "Vollständige Wartungshistorie." },
+      { title: "Technischer Support", desc: "Hilfe auch nach der Leistung." },
     ],
-    areaLabel: "Зона", areaTitle: "Зона обслуживания",
-    areaNote: "Возможен выезд в окрестные населённые пункты по предварительному согласованию.",
-    reviewsLabel: "Отзывы", reviewsTitle: "Отзывы клиентов",
-    faqLabel: "FAQ", faqTitle: "Частые вопросы",
+    areaLabel: "Gebiet", areaTitle: "Einsatzgebiet",
+    areaNote: "Einsätze in weiteren umliegenden Orten sind nach vorheriger Absprache möglich.",
+    reviewsLabel: "Bewertungen", reviewsTitle: "Kundenbewertungen",
+    faqLabel: "FAQ", faqTitle: "Häufig gestellte Fragen",
     faqs: [
-      { q: "Как быстро выполняется сервис?", a: "Критические поломки стараемся обслужить в тот же день. Стандартное время реагирования в Варшаве и окрестностях — 2–24 часа." },
-      { q: "Выезжаете ли вы в кабинет?", a: "Да. Работаем непосредственно в кабинете клиента — диагностика, ремонт и смета на месте." },
-      { q: "Какие бренды обслуживаете?", a: "KaVo, Dentsply Sirona, Planmeca, A-dec, W&H, NSK, Melag, Dürr Dental и другие популярные марки." },
-      { q: "Проводите ли технические осмотры?", a: "Да. Проводим осмотры установок, автоклавов, компрессоров и систем аспирации с полной технической документацией." },
-      { q: "Ремонтируете ли автоклавы?", a: "Да — ремонт, калибровка, тесты стерилизации и обслуживание автоклавов всех популярных марок." },
-      { q: "Обслуживаете ли компрессоры?", a: "Да. Замена фильтров, осушители, контроль герметичности и периодический сервис стоматологических компрессоров." },
-      { q: "Ведёте ли техническую документацию?", a: "Да. Ведём полный учёт оборудования и историю ремонтов — помогаем также при проверках и аудитах." },
-      { q: "Как заказать визит?", a: "Достаточно позвонить по +48 570 974 753 или заполнить форму на сайте. Перезваниваем обычно в течение часа." },
-      { q: "Как формируется смета?", a: "Клиент всегда получает предварительную смету до начала работ. Дополнительные работы не выполняются без согласования." },
-      { q: "Работаете ли по выходным?", a: "Да. Работаем 7 дней в неделю с 7:00 до 21:00, в том числе по субботам и воскресеньям." },
+      { q: "Wie schnell erfolgt der Service?", a: "Kritische Ausfälle versuchen wir noch am selben Tag zu beheben. Die übliche Reaktionszeit in Warschau und Umgebung beträgt 2–24 Stunden." },
+      { q: "Kommen Sie in die Praxis?", a: "Ja. Wir arbeiten direkt in der Praxis des Kunden — Diagnose, Reparatur und Kostenvoranschlag erfolgen vor Ort." },
+      { q: "Welche Marken werden bedient?", a: "KaVo, Dentsply Sirona, Planmeca, A-dec, W&H, NSK, Melag, Dürr Dental und weitere gängige Marken." },
+      { q: "Führen Sie technische Inspektionen durch?", a: "Ja. Wir führen Inspektionen von Behandlungseinheiten, Autoklaven, Kompressoren und Absauganlagen inklusive vollständiger technischer Dokumentation durch." },
+      { q: "Reparieren Sie Autoklaven?", a: "Ja — Reparatur, Kalibrierung, Sterilisationstests und Wartung von Autoklaven aller gängigen Marken." },
+      { q: "Warten Sie Kompressoren?", a: "Ja. Filterwechsel, Trockner, Dichtheitsprüfung und regelmäßiger Service von Dentalkompressoren." },
+      { q: "Führen Sie technische Dokumentation?", a: "Ja. Wir führen ein vollständiges Geräteverzeichnis und die Reparaturhistorie — und unterstützen auch bei Kontrollen und Audits." },
+      { q: "Wie vereinbare ich einen Termin?", a: "Rufen Sie einfach +48 570 974 753 an oder füllen Sie das Formular auf der Website aus. Wir rufen in der Regel innerhalb einer Stunde zurück." },
+      { q: "Wie wird der Kostenvoranschlag erstellt?", a: "Der Kunde erhält vor Arbeitsbeginn immer einen ersten Kostenvoranschlag. Zusätzliche Arbeiten werden nur nach Zustimmung ausgeführt." },
+      { q: "Arbeiten Sie auch am Wochenende?", a: "Ja. Wir sind 7 Tage die Woche von 7:00 bis 21:00 Uhr im Einsatz, auch samstags und sonntags." },
     ],
-    contactLabel: "Контакт", formTitle: "Сообщить о поломке или запросить предложение",
-    formNote: "Отвечаем максимально быстро — обычно в течение часа.",
-    fName: "Имя и фамилия", fClinic: "Название кабинета", fPhone: "Телефон", fEmail: "E-mail",
-    fLocation: "Местоположение", fDevice: "Тип оборудования", fDevicePh: "напр. установка, автоклав, компрессор",
-    fDescription: "Описание поломки",
-    send: "Отправить заявку",
-    formConsent: "Нажимая «Отправить», вы соглашаетесь на обратный контакт по заявке.",
-    sent: "Спасибо за заявку. Мы свяжемся с вами как можно скорее.",
-    hours: "7:00 – 21:00 · 7 дней в неделю",
-    lblPhone: "Телефон", lblEmail: "E-mail", lblHours: "Часы работы", lblAddress: "Адрес", lblNip: "NIP",
-    footerTagline: "Сервис стоматологического оборудования — Варшава и окрестности.",
-    footerContact: "Контакт", footerNav: "Навигация", footerInfo: "Информация",
-    footerPrivacy: "Политика конфиденциальности", footerCompany: "Реквизиты компании",
-    footerRights: "Все права защищены.",
-    btnCall: "Позвонить", btnReport: "Сообщить",
-    mapTitle: "Карта зоны обслуживания ARRIMSERWIS",
+    contactLabel: "Kontakt", formTitle: "Störung melden oder Angebot anfragen",
+    formNote: "Wir antworten so schnell wie möglich — in der Regel innerhalb einer Stunde.",
+    fName: "Name", fClinic: "Name der Praxis", fPhone: "Telefon", fEmail: "E-Mail",
+    fLocation: "Standort", fDevice: "Gerätetyp", fDevicePh: "z. B. Behandlungseinheit, Autoklav, Kompressor",
+    fDescription: "Beschreibung der Störung",
+    send: "Anfrage senden",
+    formConsent: "Mit Klick auf „Senden\" stimmen Sie einer Rückmeldung zu Ihrer Anfrage zu.",
+    sent: "Vielen Dank für Ihre Anfrage. Wir melden uns so schnell wie möglich bei Ihnen.",
+    sendError: "Beim Senden ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder rufen Sie uns an: " + PHONE + ".",
+    hours: "7:00 – 21:00 · 7 Tage die Woche",
+    lblPhone: "Telefon", lblEmail: "E-Mail", lblHours: "Öffnungszeiten", lblAddress: "Adresse", lblNip: "USt-IdNr. (NIP)",
+    footerTagline: "Service für zahnärztliche Geräte — Warschau und Umgebung.",
+    footerContact: "Kontakt", footerNav: "Navigation", footerInfo: "Informationen",
+    footerPrivacy: "Datenschutzerklärung", footerCompany: "Firmendaten",
+    footerRights: "Alle Rechte vorbehalten.",
+    btnCall: "Anrufen", btnReport: "Melden",
+    mapTitle: "Einsatzgebietskarte ARIMSERWIS",
   },
   en: {
     nav: { services: "Services", pricing: "Pricing", area: "Service area", reviews: "Reviews", faq: "FAQ", contact: "Contact" },
     emergencyBar: "EQUIPMENT FAILURE? Fast on-site service — Warsaw and surroundings.",
-    badge: "Warsaw · 7 days a week",
+    badge: "Warsaw and surroundings · 7 days a week",
     heroTitle: "Professional dental equipment service in Warsaw and surroundings",
     heroHighlight: "in Warsaw and surroundings",
-    heroSub: "Diagnostics, repairs, technical inspections and full-service support for dental practices.",
-    trust: ["Fast on-site response", "Technical expertise", "Multi-brand service", "7 days a week", "Open 7:00 – 21:00"],
+    heroSub: "Diagnostics, repairs, technical inspections and material & facility supplies — full-service support for dental practices.",
+    trust: ["Fast on-site response", "Technical expertise", "Multi-brand service", "7 days a week", "Open 7:00 – 21:00", "Minimised downtime"],
     ctaReport: "Report a failure", ctaCall: "Call now",
     onSiteTitle: "On-site service", onSiteDesc: "Diagnostics and repairs at the client's practice",
     aboutLabel: "About", aboutTitle: "About us",
-    aboutLead: "ARRIMSERWIS provides full-service maintenance of dental equipment for private practices and small clinics.",
+    aboutLead: "ARIMSERWIS provides full-service maintenance of dental equipment for private practices and small clinics.",
     aboutPoints: ["Fault diagnostics", "Equipment repairs", "Technical inspections", "Equipment upgrades", "Technical documentation", "Minimised downtime"],
     servicesLabel: "Services", servicesTitle: "Our services", servicesLead: "Complete technical care — from diagnostics to upgrades.",
     services: [
       { title: "Dental units", items: ["Service and repair", "Hydraulics · electronics · pneumatics", "Spare parts", "Upgrades"] },
       { title: "Autoclaves", items: ["Repair and calibration", "Sterilisation tests", "Maintenance", "Periodic inspections"] },
-      { title: "Compressors", items: ["Filter replacement", "Dryers", "Leak testing", "Periodic service"] },
-      { title: "Suction systems", items: ["Service and cleaning", "Filters · separators", "Upgrades"] },
-      { title: "Chair upholstery", items: ["Renovation and replacement", "Customisation", "Disinfectant-resistant materials"] },
-      { title: "Technical inspections", items: ["Periodic checks", "Reports and documentation", "Technical recommendations"] },
-      { title: "Diagnostics & call-out", items: ["Fast fault assessment", "On-site quote", "On-site repair"] },
-      { title: "Technical documentation", items: ["Equipment records", "Repair history", "Audit support"] },
-      { title: "Additional services", items: ["Equipment installation", "Practice upgrades", "Training and consulting"] },
+      { title: "Compressors & suction systems", items: ["Filter and dryer replacement", "Leak testing", "Suction system service and cleaning", "Upgrades and periodic inspections"] },
+      { title: "Diagnostics, inspections & documentation", items: ["Fast fault assessment and on-site quote", "Periodic technical inspections", "Reports and technical recommendations", "Equipment records and repair history"] },
+      { title: "Minor repairs & renovations", items: ["Small maintenance work at the practice", "Repair of built-in fixtures and practice furniture", "Chair upholstery renovation", "Minor electrical and plumbing work"] },
+      { title: "Material & facility supplies", items: ["Disinfectants and cleaning chemicals", "Disposables", "Office supplies for the practice", "Accessories and small equipment"] },
     ],
     supplyLabel: "Practice supplies", supplyTitle: "Materials, accessories and spare parts",
     supplyDesc: "Disinfectants, dental accessories, spare parts and practice equipment.",
     supplyCta: "Ask about availability",
-    brandsLabel: "Brands", brandsTitle: "Brands we service", brandsNote: "We also service many other dental equipment brands.",
     pricingLabel: "Pricing", pricingTitle: "Indicative pricing",
     pricingNote: "Prices are indicative. Final quote depends on device, scope of work and parts availability.",
     pricingDisclaimer: "Before any work begins, the client always receives an initial estimate. No additional work is performed without approval.",
+    pricingLegalNote: "The price list shown is for informational purposes only and does not constitute a commercial offer within the meaning of Art. 66 §1 of the Polish Civil Code. Prices may change and do not include any additional treatment costs determined individually during consultation.",
     pricing: {
       "Service & diagnostics": [
         ["Equipment diagnostics", "from 150 PLN"],
@@ -341,6 +398,7 @@ const t = {
     send: "Send request",
     formConsent: "By clicking \"Send\" you agree to be contacted back about your request.",
     sent: "Thank you. We will contact you as soon as possible.",
+    sendError: "Something went wrong while sending. Please try again or call us at " + PHONE + ".",
     hours: "7:00 – 21:00 · 7 days a week",
     lblPhone: "Phone", lblEmail: "E-mail", lblHours: "Working hours", lblAddress: "Address", lblNip: "Tax ID (NIP)",
     footerTagline: "Dental equipment service — Warsaw and surroundings.",
@@ -348,43 +406,99 @@ const t = {
     footerPrivacy: "Privacy policy", footerCompany: "Company details",
     footerRights: "All rights reserved.",
     btnCall: "Call", btnReport: "Report",
-    mapTitle: "ARRIMSERWIS service area map",
+    mapTitle: "ARIMSERWIS service area map",
   },
 } as const;
 
-const serviceIcons = [Stethoscope, ShieldCheck, Gauge, Wind, Sofa, ClipboardCheck, Truck, FileText, Sparkles];
+const serviceIcons = [Stethoscope, ShieldCheck, Gauge, ClipboardCheck, Wrench, Package];
 const whyIcons = [Truck, Wrench, Package, FileText, ClipboardCheck, ShieldCheck];
 
-const brands = ["KaVo","Dentsply Sirona","Planmeca","A-dec","W&H","NSK","Melag","Dürr Dental"];
 
-const areas = ["Warszawa","Pruszków","Piastów","Ożarów Mazowiecki","Błonie","Brwinów","Milanówek","Grodzisk Mazowiecki","Żyrardów","Konstancin-Jeziorna","Warszawa Zachód","Ursus","Włochy","Okęcie","Raszyn"];
+const areas = ["Ursus","Pruszków","Piastów","Ożarów Mazowiecki","Brwinów","Milanówek","Grodzisk Mazowiecki","Żyrardów","Jaktorów","Mszczonów"];
 
 const reviews = [
-  { name: "dr Anna Kowalska", clinic: { pl: "Gabinet stomatologiczny, Mokotów", ru: "Стоматологический кабинет, Мокотув", en: "Dental practice, Mokotów" },
+  { name: "dr Anna Kowalska", clinic: { pl: "Gabinet stomatologiczny, Mokotów", de: "Zahnarztpraxis, Mokotów", en: "Dental practice, Mokotów" },
     text: { pl: "Awaria unitu w środku dnia przyjęć — technik dojechał w ciągu dwóch godzin i naprawił hydraulikę na miejscu. Bardzo profesjonalna obsługa.",
-            ru: "Поломка установки в разгар приёма — техник приехал в течение двух часов и починил гидравлику на месте. Очень профессионально.",
+            de: "Ausfall der Behandlungseinheit mitten im Praxisbetrieb — der Techniker war innerhalb von zwei Stunden vor Ort und reparierte die Hydraulik direkt. Sehr professioneller Service.",
             en: "Unit failure in the middle of appointments — the technician arrived within two hours and fixed the hydraulics on-site. Very professional." } },
-  { name: "lek. dent. Michał Nowak", clinic: { pl: "Praktyka dentystyczna, Pruszków", ru: "Стоматологическая практика, Прушкув", en: "Dental practice, Pruszków" },
+  { name: "lek. dent. Michał Nowak", clinic: { pl: "Praktyka dentystyczna, Pruszków", de: "Zahnarztpraxis, Pruszków", en: "Dental practice, Pruszków" },
     text: { pl: "Korzystamy z opieki serwisowej od pół roku. Przeglądy zawsze w terminie, pełna dokumentacja, transparentne ceny. Polecam.",
-            ru: "Пользуемся сервисной поддержкой уже полгода. Осмотры всегда в срок, полная документация, прозрачные цены. Рекомендую.",
+            de: "Wir nutzen den Servicevertrag seit einem halben Jahr. Inspektionen immer pünktlich, vollständige Dokumentation, transparente Preise. Sehr empfehlenswert.",
             en: "We've been on the service plan for half a year. Inspections always on time, full documentation, transparent prices. Recommended." } },
-  { name: "dr Joanna Wiśniewska", clinic: { pl: "Klinika stomatologiczna, Ursus", ru: "Стоматологическая клиника, Урсус", en: "Dental clinic, Ursus" },
+  { name: "dr Joanna Wiśniewska", clinic: { pl: "Klinika stomatologiczna, Ursus", de: "Zahnklinik, Ursus", en: "Dental clinic, Ursus" },
     text: { pl: "Serwis autoklawu i kalibracja — wszystko zrobione szybko, z protokołem. Wreszcie firma, na której można polegać.",
-            ru: "Сервис автоклава и калибровка — всё сделано быстро, с протоколом. Наконец-то компания, на которую можно положиться.",
+            de: "Autoklaven-Service und Kalibrierung — alles schnell erledigt, mit Protokoll. Endlich eine Firma, auf die man sich verlassen kann.",
             en: "Autoclave service and calibration — everything done quickly, with a report. Finally a company you can rely on." } },
-  { name: "lek. dent. Paweł Zieliński", clinic: { pl: "Gabinet, Grodzisk Mazowiecki", ru: "Кабинет, Гродзиск-Мазовецкий", en: "Practice, Grodzisk Mazowiecki" },
+  { name: "lek. dent. Paweł Zieliński", clinic: { pl: "Gabinet, Grodzisk Mazowiecki", de: "Praxis, Grodzisk Mazowiecki", en: "Practice, Grodzisk Mazowiecki" },
     text: { pl: "Modernizacja kompresora i systemu ssącego. Doradztwo na wysokim poziomie, czysta i terminowa robota.",
-            ru: "Модернизация компрессора и системы аспирации. Высокий уровень консультаций, чистая и своевременная работа.",
+            de: "Modernisierung von Kompressor und Absauganlage. Beratung auf hohem Niveau, saubere und pünktliche Arbeit.",
             en: "Compressor and suction system upgrade. Top-level advice, clean and on-time work." } },
-  { name: "dr Karolina Mazur", clinic: { pl: "Gabinet, Raszyn", ru: "Кабинет, Рашин", en: "Practice, Raszyn" },
+  { name: "dr Karolina Mazur", clinic: { pl: "Gabinet, Raszyn", de: "Praxis, Raszyn", en: "Practice, Raszyn" },
     text: { pl: "Renowacja tapicerki fotela — efekt jak nowy. Materiał odporny na dezynfekcję, świetne wykonanie.",
-            ru: "Реновация обивки кресла — как новое. Материал устойчив к дезинфекции, отличное исполнение.",
+            de: "Renovierung der Stuhlpolsterung — wie neu. Desinfektionsbeständiges Material, hervorragende Ausführung.",
             en: "Chair upholstery renovation — looks brand new. Disinfectant-resistant material, great workmanship." } },
-  { name: "lek. dent. Tomasz Lewandowski", clinic: { pl: "Praktyka, Żyrardów", ru: "Практика, Жирардув", en: "Practice, Żyrardów" },
+  { name: "lek. dent. Tomasz Lewandowski", clinic: { pl: "Praktyka, Żyrardów", de: "Praxis, Żyrardów", en: "Practice, Żyrardów" },
     text: { pl: "Reagują w weekend, co dla nas kluczowe. Wycena zawsze przed pracami, żadnych niespodzianek na fakturze.",
-            ru: "Реагируют в выходные, что для нас важно. Смета всегда до работ, никаких сюрпризов в счёте.",
+            de: "Sie reagieren auch am Wochenende, was für uns entscheidend ist. Kostenvoranschlag immer vor Arbeitsbeginn, keine Überraschungen auf der Rechnung.",
             en: "They respond on weekends, which is key for us. Quote always before work, no invoice surprises." } },
 ];
+
+function ServiceAreaMap({ title }: { title: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<LeafletTypes.Map | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      if (!containerRef.current || mapRef.current) return;
+      const L = await import("leaflet");
+
+      if (cancelled || !containerRef.current) return;
+
+      delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: markerIcon2x,
+        iconUrl: markerIconUrl,
+        shadowUrl: markerShadow,
+      });
+
+      const map = L.map(containerRef.current, { scrollWheelZoom: false }).setView(
+        [52.10, 20.68],
+        9
+      );
+      mapRef.current = map;
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19,
+      }).addTo(map);
+
+      const zonePolygon = L.polygon(SERVICE_ZONE, {
+        color: "#0d9488",
+        weight: 2,
+        fillColor: "#14b8a6",
+        fillOpacity: 0.22,
+      }).addTo(map);
+
+      L.marker(ADDRESS_COORDS)
+        .addTo(map)
+        .bindPopup(`ARIMSERWIS<br/>${ADDRESS}`);
+
+      map.fitBounds(zonePolygon.getBounds(), { padding: [24, 24] });
+    })();
+
+    return () => {
+      cancelled = true;
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []);
+
+  return <div ref={containerRef} role="img" aria-label={title} className="w-full h-full" />;
+}
 
 function Landing() {
   const [lang, setLang] = useState<Lang>("pl");
@@ -397,10 +511,33 @@ function Landing() {
     mainEntity: L.faqs.map(f => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
   }), [L]);
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    toast.success(L.sent);
-    (e.target as HTMLFormElement).reset();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const payload = {
+      access_key: WEB3FORMS_ACCESS_KEY,
+      subject: "Nowe zgłoszenie ze strony ARIMSERWIS",
+      from_name: (formData.get("name") as string) || "Formularz ARIMSERWIS",
+      ...Object.fromEntries(formData),
+    };
+
+    try {
+      const res = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await res.json();
+      if (result.success) {
+        toast.success(L.sent);
+        form.reset();
+      } else {
+        toast.error(L.sendError);
+      }
+    } catch {
+      toast.error(L.sendError);
+    }
   }
 
   const titleParts = (() => {
@@ -427,8 +564,8 @@ function Landing() {
       <header className="sticky top-0 z-40 backdrop-blur bg-background/85 border-b border-border">
         <div className="mx-auto max-w-7xl px-4 h-16 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
           <a href="#top" className="flex items-center gap-2 min-w-0">
-            <div className="h-9 w-9 shrink-0 rounded-lg gradient-teal grid place-items-center text-white font-bold">A</div>
-            <span className="font-display font-bold tracking-tight truncate text-[color:var(--navy-deep)]">ARRIMSERWIS</span>
+            <img src={logoIcon} alt="ARIMSERWIS" className="h-9 w-9 shrink-0 object-contain" width={36} height={36} />
+            <span className="font-display font-bold tracking-tight truncate text-[color:var(--navy-deep)]">ARIMSERWIS</span>
           </a>
           <div className="flex items-center gap-2">
             <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-foreground/80 mr-4">
@@ -440,12 +577,15 @@ function Landing() {
               <a href="#contact" className="hover:text-[color:var(--teal)]">{L.nav.contact}</a>
             </nav>
             <div className="flex items-center gap-1 rounded-full border border-border p-1 text-xs">
-              {(["pl","ru","en"] as Lang[]).map(l => (
+              {(["pl","de","en"] as Lang[]).map(l => (
                 <button key={l} onClick={() => setLang(l)} className={`px-2.5 py-1 rounded-full uppercase font-semibold transition ${lang === l ? "bg-[color:var(--navy)] text-white" : "text-foreground/60 hover:text-foreground"}`}>{l}</button>
               ))}
             </div>
             <a href={PHONE_HREF} className="hidden md:inline-flex items-center gap-2 rounded-full bg-[color:var(--navy)] text-white px-4 py-2 text-sm font-semibold hover:bg-[color:var(--navy-deep)] transition">
               <Phone className="h-4 w-4" /> {PHONE}
+            </a>
+            <a href="#contact" className="hidden md:inline-flex items-center gap-2 rounded-full bg-[color:var(--emergency)] text-white px-4 py-2 text-sm font-semibold hover:brightness-110 transition">
+              <AlertTriangle className="h-4 w-4" /> {L.ctaReport}
             </a>
             <button onClick={() => setMenuOpen(v => !v)} className="lg:hidden p-2" aria-label="Menu">
               {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -469,9 +609,9 @@ function Landing() {
       {/* HERO */}
       <section id="top" className="relative overflow-hidden gradient-hero text-white">
         <div className="absolute inset-0 opacity-25">
-          <img src={heroImg} alt="ARRIMSERWIS" className="h-full w-full object-cover" width={1920} height={1280} />
+          <img src={heroImg} alt="ARIMSERWIS" className="h-full w-full object-cover" width={1920} height={1280} />
         </div>
-        <div className="relative mx-auto max-w-7xl px-4 py-16 md:py-24 lg:py-32 grid lg:grid-cols-[1.2fr_1fr] gap-10 items-center">
+        <div className="relative mx-auto max-w-7xl px-4 py-10 md:py-16 lg:py-20 grid lg:grid-cols-[1.2fr_1fr] gap-10 items-center">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/15 px-3 py-1 text-xs font-medium backdrop-blur">
               <span className="h-2 w-2 rounded-full bg-[color:var(--teal)] animate-pulse" /> {L.badge}
@@ -480,11 +620,13 @@ function Landing() {
               {titleParts.head}<span className="text-gradient">{titleParts.tail}</span>
             </h1>
             <p className="mt-5 text-base sm:text-lg text-white/80 max-w-2xl">{L.heroSub}</p>
-            <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/85">
-              {L.trust.map(item => (
-                <li key={item} className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-[color:var(--teal)]" />{item}</li>
-              ))}
-            </ul>
+            <div className="mt-6 rounded-2xl border border-white/15 bg-white/5 backdrop-blur px-4 py-4 sm:px-5 sm:py-5 max-w-2xl">
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-2.5 text-sm text-white/90">
+                {L.trust.map(item => (
+                  <li key={item} className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-[color:var(--teal)] shrink-0" />{item}</li>
+                ))}
+              </ul>
+            </div>
             <div className="mt-8 flex flex-wrap gap-3">
               <a href="#contact" className="inline-flex items-center gap-2 rounded-full bg-[color:var(--emergency)] hover:brightness-110 px-6 py-3.5 text-sm font-bold shadow-[var(--shadow-glow)] transition">
                 <AlertTriangle className="h-4 w-4" /> {L.ctaReport}
@@ -496,7 +638,7 @@ function Landing() {
           </div>
           <div className="hidden lg:block">
             <div className="relative rounded-3xl overflow-hidden shadow-[var(--shadow-premium)] border border-white/10">
-              <img src={technicianImg} alt="ARRIMSERWIS" className="w-full h-[520px] object-cover" width={1280} height={1280} />
+              <img src={technicianImg} alt="ARIMSERWIS" className="w-full h-[520px] object-cover" width={1280} height={1280} />
               <div className="absolute bottom-4 left-4 right-4 rounded-2xl bg-background/95 backdrop-blur p-4 text-foreground">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full gradient-teal grid place-items-center text-white"><Wrench className="h-5 w-5" /></div>
@@ -511,27 +653,8 @@ function Landing() {
         </div>
       </section>
 
-      {/* About */}
-      <section className="py-16 md:py-24">
-        <div className="mx-auto max-w-7xl px-4 grid md:grid-cols-2 gap-10 items-center">
-          <div>
-            <SectionLabel>{L.aboutLabel}</SectionLabel>
-            <h2 className="mt-3 text-3xl md:text-4xl font-bold text-[color:var(--navy-deep)]">{L.aboutTitle}</h2>
-            <p className="mt-4 text-lg text-muted-foreground">{L.aboutLead}</p>
-            <ul className="mt-6 grid sm:grid-cols-2 gap-3 text-sm">
-              {L.aboutPoints.map(i => (
-                <li key={i} className="flex items-start gap-2"><CheckCircle2 className="h-5 w-5 text-[color:var(--teal)] shrink-0 mt-0.5" /><span>{i}</span></li>
-              ))}
-            </ul>
-          </div>
-          <div className="rounded-3xl overflow-hidden shadow-[var(--shadow-premium)]">
-            <img src={equipmentImg} alt="ARRIMSERWIS" loading="lazy" width={1280} height={960} className="w-full h-auto object-cover" />
-          </div>
-        </div>
-      </section>
-
       {/* Services */}
-      <section id="services" className="py-16 md:py-24 bg-[color:var(--teal-soft)]/40">
+      <section id="services" className="py-10 md:py-14 bg-[color:var(--teal-soft)]/40">
         <div className="mx-auto max-w-7xl px-4">
           <div className="max-w-2xl">
             <SectionLabel>{L.servicesLabel}</SectionLabel>
@@ -567,24 +690,8 @@ function Landing() {
         </div>
       </section>
 
-      {/* Brands */}
-      <section className="py-14 md:py-20">
-        <div className="mx-auto max-w-7xl px-4">
-          <div className="text-center max-w-2xl mx-auto">
-            <SectionLabel>{L.brandsLabel}</SectionLabel>
-            <h2 className="mt-3 text-3xl md:text-4xl font-bold text-[color:var(--navy-deep)]">{L.brandsTitle}</h2>
-          </div>
-          <div className="mt-10 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-            {brands.map(b => (
-              <div key={b} className="rounded-xl border border-border bg-card px-4 py-5 text-center font-display font-semibold text-[color:var(--navy)]/85 hover:border-[color:var(--teal)] hover:text-[color:var(--navy-deep)] transition">{b}</div>
-            ))}
-          </div>
-          <p className="mt-6 text-center text-sm text-muted-foreground">{L.brandsNote}</p>
-        </div>
-      </section>
-
       {/* Pricing */}
-      <section id="pricing" className="py-16 md:py-24 bg-[color:var(--teal-soft)]/40">
+      <section id="pricing" className="py-10 md:py-14 bg-[color:var(--teal-soft)]/40">
         <div className="mx-auto max-w-7xl px-4">
           <div className="max-w-2xl">
             <SectionLabel>{L.pricingLabel}</SectionLabel>
@@ -608,8 +715,8 @@ function Landing() {
           </div>
 
           {/* Care plan */}
-          <div className="mt-8 rounded-3xl overflow-hidden grid md:grid-cols-[1.2fr_1fr]">
-            <div className="bg-[color:var(--navy-deep)] text-white p-8 md:p-10">
+          <div className="mt-8 rounded-3xl bg-[color:var(--navy)] text-white p-8 md:p-10 grid md:grid-cols-[1.4fr_auto] gap-6 items-center">
+            <div>
               <SectionLabel className="text-[color:var(--teal)]">{L.carePlanLabel}</SectionLabel>
               <h3 className="mt-2 text-2xl md:text-3xl font-bold">{L.carePlanTitle}</h3>
               <div className="mt-4 text-4xl font-extrabold font-display">{L.carePlanPrice} <span className="text-base font-medium text-white/70">{L.carePlanPer}</span></div>
@@ -618,19 +725,39 @@ function Landing() {
                   <li key={i} className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-[color:var(--teal)]" />{i}</li>
                 ))}
               </ul>
-              <a href="#contact" className="mt-7 inline-flex items-center gap-2 rounded-full bg-[color:var(--teal)] text-[color:var(--navy-deep)] px-6 py-3 font-semibold hover:brightness-105">
-                {L.carePlanCta}
-              </a>
             </div>
-            <div className="bg-card p-8 md:p-10 flex items-center">
-              <p className="text-sm text-muted-foreground italic">{L.pricingDisclaimer}</p>
-            </div>
+            <a href="#contact" className="inline-flex items-center gap-2 rounded-full bg-[color:var(--teal)] text-[color:var(--navy-deep)] px-6 py-3 font-semibold hover:brightness-105 transition w-fit">
+              {L.carePlanCta}
+            </a>
+          </div>
+
+          <p className="mt-6 text-xs text-muted-foreground italic max-w-3xl">{L.pricingDisclaimer} {L.pricingLegalNote}</p>
+        </div>
+      </section>
+
+      {/* Area */}
+      <section id="area" className="py-10 md:py-14 bg-[color:var(--teal-soft)]/40">
+        <div className="mx-auto max-w-7xl px-4 grid lg:grid-cols-2 gap-10 items-start">
+          <div>
+            <SectionLabel>{L.areaLabel}</SectionLabel>
+            <h2 className="mt-3 text-3xl md:text-4xl font-bold text-[color:var(--navy-deep)]">{L.areaTitle}</h2>
+            <p className="mt-3 text-muted-foreground">{L.areaNote}</p>
+            <ul className="mt-6 flex flex-wrap gap-2">
+              {areas.map(a => (
+                <li key={a} className="inline-flex items-center gap-1.5 rounded-full bg-card border border-border px-3 py-1.5 text-sm">
+                  <MapPin className="h-3.5 w-3.5 text-[color:var(--teal)]" />{a}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="relative isolate z-0 rounded-3xl overflow-hidden shadow-[var(--shadow-premium)] border border-border h-[420px]">
+            <ServiceAreaMap title={L.mapTitle} />
           </div>
         </div>
       </section>
 
       {/* Why us */}
-      <section className="py-16 md:py-24">
+      <section className="py-10 md:py-14">
         <div className="mx-auto max-w-7xl px-4">
           <div className="max-w-2xl">
             <SectionLabel>{L.whyLabel}</SectionLabel>
@@ -651,34 +778,27 @@ function Landing() {
         </div>
       </section>
 
-      {/* Area */}
-      <section id="area" className="py-16 md:py-24 bg-[color:var(--teal-soft)]/40">
-        <div className="mx-auto max-w-7xl px-4 grid lg:grid-cols-2 gap-10 items-start">
+      {/* About */}
+      <section className="py-10 md:py-14">
+        <div className="mx-auto max-w-7xl px-4 grid md:grid-cols-2 gap-10 items-center">
           <div>
-            <SectionLabel>{L.areaLabel}</SectionLabel>
-            <h2 className="mt-3 text-3xl md:text-4xl font-bold text-[color:var(--navy-deep)]">{L.areaTitle}</h2>
-            <p className="mt-3 text-muted-foreground">{L.areaNote}</p>
-            <ul className="mt-6 flex flex-wrap gap-2">
-              {areas.map(a => (
-                <li key={a} className="inline-flex items-center gap-1.5 rounded-full bg-card border border-border px-3 py-1.5 text-sm">
-                  <MapPin className="h-3.5 w-3.5 text-[color:var(--teal)]" />{a}
-                </li>
+            <SectionLabel>{L.aboutLabel}</SectionLabel>
+            <h2 className="mt-3 text-3xl md:text-4xl font-bold text-[color:var(--navy-deep)]">{L.aboutTitle}</h2>
+            <p className="mt-4 text-lg text-muted-foreground">{L.aboutLead}</p>
+            <ul className="mt-6 grid sm:grid-cols-2 gap-3 text-sm">
+              {L.aboutPoints.map(i => (
+                <li key={i} className="flex items-start gap-2"><CheckCircle2 className="h-5 w-5 text-[color:var(--teal)] shrink-0 mt-0.5" /><span>{i}</span></li>
               ))}
             </ul>
           </div>
-          <div className="rounded-3xl overflow-hidden shadow-[var(--shadow-premium)] border border-border h-[420px]">
-            <iframe
-              title={L.mapTitle}
-              src="https://www.openstreetmap.org/export/embed.html?bbox=20.55%2C52.05%2C21.30%2C52.40&layer=mapnik&marker=52.2297%2C21.0122"
-              className="w-full h-full border-0"
-              loading="lazy"
-            />
+          <div className="rounded-3xl overflow-hidden shadow-[var(--shadow-premium)]">
+            <img src={equipmentImg} alt="ARIMSERWIS" loading="lazy" width={1280} height={960} className="w-full h-auto object-cover" />
           </div>
         </div>
       </section>
 
       {/* Reviews */}
-      <section id="reviews" className="py-16 md:py-24">
+      <section id="reviews" className="py-10 md:py-14">
         <div className="mx-auto max-w-7xl px-4">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="max-w-2xl">
@@ -706,7 +826,7 @@ function Landing() {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="py-16 md:py-24 bg-[color:var(--teal-soft)]/40">
+      <section id="faq" className="py-10 md:py-14 bg-[color:var(--teal-soft)]/40">
         <div className="mx-auto max-w-3xl px-4">
           <div className="text-center">
             <SectionLabel>{L.faqLabel}</SectionLabel>
@@ -730,7 +850,7 @@ function Landing() {
       </section>
 
       {/* Contact / Form */}
-      <section id="contact" className="py-16 md:py-24">
+      <section id="contact" className="py-10 md:py-14">
         <div className="mx-auto max-w-7xl px-4 grid lg:grid-cols-[1fr_1.2fr] gap-10">
           <div>
             <SectionLabel>{L.contactLabel}</SectionLabel>
@@ -752,10 +872,6 @@ function Landing() {
               <div className="flex items-center gap-4 rounded-2xl border border-border p-4">
                 <div className="h-11 w-11 rounded-xl gradient-teal grid place-items-center text-white"><Clock className="h-5 w-5" /></div>
                 <div><div className="text-xs text-muted-foreground">{L.lblHours}</div><div className="font-semibold text-[color:var(--navy-deep)]">{L.hours}</div></div>
-              </div>
-              <div className="flex items-center gap-4 rounded-2xl border border-border p-4">
-                <div className="h-11 w-11 rounded-xl gradient-teal grid place-items-center text-white"><FileText className="h-5 w-5" /></div>
-                <div><div className="text-xs text-muted-foreground">{L.lblNip}</div><div className="font-semibold text-[color:var(--navy-deep)]">{NIP}</div></div>
               </div>
             </div>
           </div>
@@ -786,8 +902,8 @@ function Landing() {
         <div className="mx-auto max-w-7xl px-4 py-14 grid md:grid-cols-4 gap-8">
           <div>
             <div className="flex items-center gap-2">
-              <div className="h-9 w-9 rounded-lg gradient-teal grid place-items-center text-white font-bold">A</div>
-              <span className="font-display font-bold text-white">ARRIMSERWIS</span>
+              <img src={logoIcon} alt="ARIMSERWIS" className="h-9 w-9 object-contain" width={36} height={36} />
+              <span className="font-display font-bold text-white">ARIMSERWIS</span>
             </div>
             <p className="mt-4 text-sm text-white/65">{L.footerTagline}</p>
           </div>
@@ -812,7 +928,7 @@ function Landing() {
           <div>
             <div className="text-white font-semibold mb-3">{L.footerCompany}</div>
             <ul className="space-y-2 text-sm text-white/70">
-              <li className="text-white font-medium">ARRIMSERWIS</li>
+              <li className="text-white font-medium">ARIMSERWIS</li>
               <li>{ADDRESS}</li>
               <li>{L.lblNip}: {NIP}</li>
               <li className="pt-2"><a href="#" className="hover:text-[color:var(--teal)]">{L.footerPrivacy}</a></li>
@@ -821,7 +937,7 @@ function Landing() {
         </div>
         <div className="border-t border-white/10">
           <div className="mx-auto max-w-7xl px-4 py-5 text-xs text-white/55 flex flex-wrap items-center justify-between gap-3">
-            <span>© {new Date().getFullYear()} ARRIMSERWIS. {L.footerRights}</span>
+            <span>© 2020 ARIMSERWIS. {L.footerRights}</span>
             <span>NIP {NIP}</span>
           </div>
         </div>
