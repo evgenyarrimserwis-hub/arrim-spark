@@ -719,19 +719,14 @@ function Landing() {
             <div>
               <SectionLabel className="text-[color:var(--teal)]">{L.carePlanLabel}</SectionLabel>
               <h3 className="mt-2 text-2xl md:text-3xl font-bold">{L.carePlanTitle}</h3>
-              <div className="mt-4 text-4xl font-extrabold font-display">{L.carePlanPrice} <span className="text-base font-medium text-white/70">{L.carePlanPer}</span></div>
-              <ul className="mt-5 space-y-2 text-sm text-white/85">
-                {L.carePlanItems.map(i => (
-                  <li key={i} className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-[color:var(--teal)]" />{i}</li>
-                ))}
-              </ul>
+              <p className="mt-2 text-white/75">{L.carePlanItems.join(" • ")}</p>
             </div>
             <a href="#contact" className="inline-flex items-center gap-2 rounded-full bg-[color:var(--teal)] text-[color:var(--navy-deep)] px-6 py-3 font-semibold hover:brightness-105 transition w-fit">
               {L.carePlanCta}
             </a>
           </div>
 
-          <p className="mt-6 text-xs text-muted-foreground italic max-w-3xl">{L.pricingDisclaimer} {L.pricingLegalNote}</p>
+          <p className="mt-6 text-xs text-muted-foreground italic">{L.pricingDisclaimer} {L.pricingLegalNote}</p>
         </div>
       </section>
 
@@ -938,7 +933,6 @@ function Landing() {
         <div className="border-t border-white/10">
           <div className="mx-auto max-w-7xl px-4 py-5 text-xs text-white/55 flex flex-wrap items-center justify-between gap-3">
             <span>© 2020 ARIMSERWIS. {L.footerRights}</span>
-            <span>NIP {NIP}</span>
           </div>
         </div>
       </footer>
