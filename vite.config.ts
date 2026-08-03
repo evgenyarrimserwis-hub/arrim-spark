@@ -14,7 +14,4 @@ export default defineConfig({
     // Prerender every reachable route to static HTML at build time (SEO-friendly).
     prerender: { enabled: true, crawlLinks: true },
   },
-  // Disable Nitro so TanStack Start uses its native dist/ output; the prerenderer
-  // writes static HTML into dist/client, which is the deployable static site.
-  nitro: false,
 });
